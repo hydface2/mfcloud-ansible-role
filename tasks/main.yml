@@ -1,0 +1,35 @@
+---
+  - name: Install mfcloud dependency libraries
+    apt: name={{ item }}
+    with_items:
+      - python-dev
+      - python-virtualenv
+      - libffi-dev
+      - libssl-dev
+
+  - name: Install haproxy
+    apt: name=haproxy
+  - name: Enable haproxy
+    replace: dest=/etc/default/haproxy regexp='ENABLED=0' replace='ENABLED=1'
+  - stat: path=/etc/haproxy/haproxy.cfg
+    register: st
+  - name: Create haproxy initial config
+    template: src=haproxy.cfg dest=/etc/haproxy/haproxy.cfg
+    when: not st.stat.exists
+  - name: Start haproxy service
+    service: name=haproxy state=started
+
+  - name: Install redis-server
+    apt: name=redis-server
+
+  - name: Start redis service
+    service: name=redis-server state=started
+
+  - name: Install mfcloud
+    pip: name=mfcloud virtualenv=/opt/mfcloud
+
+  - name: Install upstart scripts
+    template: src=upstart.conf dest=/etc/init/mfcloud.conf
+
+  - name: Start mfcloud service
+    service: name=mfcloud state=running
